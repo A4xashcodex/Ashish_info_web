@@ -10,7 +10,7 @@ import random
 app = Flask(__name__)
 
 # Configuration
-API_BASE_URL = "https://stargamerff.qzz.io/accinfo?"
+API_BASE_URL = "https://player-info-ob54.vercel.app/player-info?"
 ICON_BASE_URL = "https://cdn.jsdelivr.net/gh/ShahGCreator/icon@main/PNG"
 
 def format_timestamp(timestamp):
