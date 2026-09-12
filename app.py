@@ -10,7 +10,7 @@ import random
 app = Flask(__name__)
 
 # Configuration
-API_BASE_URL = "https://player-info-ob54.vercel.app/player-info?"
+API_BASE_URL = "https://stargamerff.qzz.io/accinfo?"
 ICON_BASE_URL = "https://cdn.jsdelivr.net/gh/ShahGCreator/icon@main/PNG"
 
 def format_timestamp(timestamp):
@@ -21,11 +21,21 @@ def format_timestamp(timestamp):
 
 def fetch_player_info(uid):
     try:
-        url = f"{API_BASE_URL}?uid={uid}"
-        response = requests.get(url, timeout=10)
+        response = requests.get(
+            API_BASE_URL,
+            params={"uid": uid},
+            timeout=15
+        )
+
+        print("API URL:", response.url)
+        print("API STATUS:", response.status_code)
+
         if response.status_code == 200:
             return response.json()
+
+        print("API ERROR:", response.text[:1000])
         return None
+
     except Exception as e:
         print(f"Error fetching data: {e}")
         return None
@@ -1317,17 +1327,18 @@ HTML_TEMPLATE = '''
             }
 
             // Social
-            if (data.social) {
-                const social = data.social;
-                document.getElementById('socialInfo').innerHTML = `
-                    ${social.highlight ? social.highlight : 'No bio available'}<br>
-                    <span style="font-size:10px;color:rgba(255,255,255,0.2);">
-                        ${social.gender || 'Unknown'} · ${social.privacy || 'Private'}
-                    </span>
-                `;
-            } else {
-                document.getElementById('socialInfo').textContent = 'No bio available';
-            }
+if (data.social) {
+    const social = data.social;
+
+    document.getElementById('socialInfo').innerHTML = `
+        ${social.highlight ? social.highlight : 'No bio available'}<br>
+        <span style="font-size:10px;color:rgba(255,255,255,0.2);">
+            ${social.gender || 'Unknown'} · ${social.language || 'Unknown'}
+        </span>
+    `;
+} else {
+    document.getElementById('socialInfo').textContent = {signature};
+}
         }
 
         // ============================
@@ -1399,49 +1410,71 @@ def index():
 @app.route('/api/player/<uid>')
 def get_player(uid):
     data = fetch_player_info(uid)
+
     if not data:
-        return jsonify({'error': 'Player not found'}), 404
-    
-    formatted_data = {}
-    
-    if 'basic_info' in data:
-        basic = data['basic_info']
-        formatted_data['basic'] = {
+        return jsonify({
+            'error': 'Player not found'
+        }), 404
+
+    basic = data.get('basicInfo', {})
+    profile = data.get('profileInfo', {})
+    clan = data.get('clanBasicInfo', {})
+    social = data.get('socialInfo', {})
+    pet = data.get('petInfo', {})
+
+    formatted_data = {
+        'basic': {
             'nickname': basic.get('nickname', 'Unknown'),
             'level': basic.get('level', 0),
             'exp': basic.get('exp', 0),
             'rank': basic.get('rank', 0),
-            'max_rank': basic.get('max_rank', 0),
-            'ranking_points': basic.get('ranking_points', 0),
+            'max_rank': basic.get('maxRank', 0),
+            'ranking_points': basic.get('rankingPoints', 0),
             'liked': basic.get('liked', 0),
             'region': basic.get('region', 'N/A'),
-            'account_id': basic.get('account_id', 0),
-            'badge_cnt': basic.get('badge_cnt', 0),
-            'weapons': process_items(basic.get('weapon_skin_shows', []))
-        }
-    
-    if 'profile_info' in data:
-        profile = data['profile_info']
-        if 'equipped_skills' in profile:
-            formatted_data['skills'] = process_items(profile['equipped_skills'])
-    
-    if 'clan_basic_info' in data:
-        clan = data['clan_basic_info']
-        formatted_data['clan'] = {
-            'name': clan.get('clan_name', 'No Clan'),
-            'level': clan.get('clan_level', 0),
-            'members': clan.get('current_members', 0),
-            'max_members': clan.get('max_members', 0)
-        }
-    
-    if 'social_info' in data:
-        social = data['social_info']
-        formatted_data['social'] = {
-            'highlight': social.get('social_highlight', ''),
+            'account_id': basic.get('accountId', uid),
+            'badge_cnt': basic.get('badgeCnt', 0),
+            'head_pic': basic.get('headPic', 0),
+            'season_id': basic.get('seasonId', 0),
+            'cs_rank': basic.get('csRank', 0),
+            'cs_ranking_points': basic.get('csRankingPoints', 0),
+            'cs_max_rank': basic.get('csMaxRank', 0),
+            'release_version': basic.get('releaseVersion', ''),
+            'prime_level': basic.get('primeInfo', {}).get(
+                'primeLevel', 0
+            )
+        },
+
+        'profile': {
+            'avatar_id': profile.get('avatarId', 0),
+            'clothes': profile.get('clothes', []),
+            'skills': profile.get('equipedSkills', [])
+        },
+
+        'clan': {
+            'name': clan.get('clanName', 'No Clan'),
+            'level': clan.get('clanLevel', 0),
+            'members': clan.get('memberNum', 0),
+            'max_members': clan.get('capacity', 0),
+            'clan_id': clan.get('clanId', '')
+        },
+
+        'social': {
             'gender': social.get('gender', 'Unknown'),
-            'privacy': social.get('privacy', 'Private')
+            'language': social.get('language', 'Unknown'),
+            'signature': social.get('signature', ''),
+            'rank_show': social.get('rankShow', '')
+        },
+
+        'pet': {
+            'id': pet.get('id', 0),
+            'level': pet.get('level', 0),
+            'exp': pet.get('exp', 0),
+            'skin_id': pet.get('skinId', 0),
+            'selected_skill_id': pet.get('selectedSkillId', 0)
         }
-    
+    }
+
     return jsonify(formatted_data)
 
 app.debug = False
