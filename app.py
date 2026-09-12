@@ -1331,7 +1331,7 @@ if (data.social) {
     const social = data.social;
 
     document.getElementById('socialInfo').innerHTML = `
-        ${social.highlight ? social.highlight : 'Signature'}<br>
+        ${social.signature ? social.signature : 'Unknown'}<br>
         <span style="font-size:10px;color:rgba(255,255,255,0.2);">
             ${social.gender || 'Unknown'} · ${social.language || 'Unknown'}
         </span>
